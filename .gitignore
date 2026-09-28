@@ -1,0 +1,27 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment/secrets
+.env
+
+# Generated ML files
+*.pkl
+*.joblib
+*.pt
+*.pth
+
+# OS
+.DS_Store
