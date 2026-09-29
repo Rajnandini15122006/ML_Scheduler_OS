@@ -2553,59 +2553,52 @@ Implemented:
 
 ---
 
-## Quick Start
+## Quick Start & Master Execution
 
-For anyone who just wants to run the project:
-
-```bash
-git clone <YOUR_REPOSITORY_URL>
-
-cd ml_cpu_scheduler
-
-python -m venv .venv
-
-source .venv/bin/activate
-
-pip install -r requirements.txt
-
-python src/ml_classifier.py
-
-python src/ml_guided_scheduler.py
-
-python src/compare_schedulers.py
-```
-
-Windows PowerShell:
+### 1. Run Complete End-to-End Pipeline & Dashboard (One Command)
+To run the full demonstration pipeline (dataset check, ML model training, PyTorch workload, scheduler benchmarking, ablation studies, and dashboard launch):
 
 ```powershell
-git clone <YOUR_REPOSITORY_URL>
+python run_project.py
+```
+Or double-click `run.bat` on Windows.
 
-cd ml_cpu_scheduler
+---
 
-python -m venv .venv
+### 2. Launch Interactive Streamlit Dashboard Directly
+To immediately open the interactive dashboard:
 
-.venv\Scripts\Activate.ps1
+```powershell
+streamlit run dashboard/app.py
+```
+Then open **`http://localhost:8501`** in your browser.
 
-pip install -r requirements.txt
+---
 
+### 3. Running Individual Stages
+If you want to run specific components independently:
+
+```powershell
+# 1. Train Random Forest Workload Classifier
 python src/ml_classifier.py
 
+# 2. Benchmark PyTorch ML Training Workload
+python workloads/pytorch_train.py --epochs 3
+
+# 3. Run Adaptive ML-Guided Scheduler
 python src/ml_guided_scheduler.py
 
+# 4. Compare All Schedulers (FCFS, RR, Priority, SJF, ML-Guided)
 python src/compare_schedulers.py
+
+# 5. Run Ablation Studies (A0, A1, A2, A5)
+python src/ablation_study.py
 ```
 
-Final comparison:
-
-```text
-data/scheduler_comparison.csv
-```
-
-ML-guided process-level results:
-
-```text
-data/ml_guided_results.csv
-```
+Final comparison tables:
+- `data/scheduler_comparison.csv`
+- `data/ablation_results.csv`
+- `data/ml_guided_results.csv`
 
 ---
 

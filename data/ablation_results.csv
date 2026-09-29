@@ -1,0 +1,6 @@
+,Avg Waiting Time,Avg Turnaround Time,Avg Response Time,Max Wait Time,Jain Fairness
+Full ML-Guided Policy,20813.04,20859.66,20799.59,41883.0,0.742
+A0: No ML (Rule-Based),20789.22,20835.83,20775.58,41883.0,0.741
+A1: No Adaptive Quantum,20812.67,20859.29,20801.08,41883.0,0.742
+A2: No Aging,22091.74,22138.35,18492.16,46147.0,0.757
+A5: No Confidence Fallback,20857.19,20903.81,20843.04,41883.0,0.743
