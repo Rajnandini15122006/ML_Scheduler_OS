@@ -87,20 +87,19 @@ def get_adaptive_quantum(workload_class, min_q=4, max_q=20):
         q = 10
     return int(np.clip(q, min_q, max_q))
 
-def assign_dsq(workload_class, priority, confidence, wait_time, starvation_limit=3000):
+def assign_dsq(workload_class, priority=5):
     """
-    Assigns task to Dispatch Queue (DSQ_HIGH, DSQ_MED, DSQ_LOW).
-    Aging: If task has waited longer than starvation_limit, promote to DSQ_HIGH.
+    Assigns task to Dispatch Queue (DSQ_HIGH, DSQ_MED, DSQ_LOW) based on ML workload class & priority:
+    - DSQ_HIGH: ML_TRAINING (GPU critical path) and IO_BOUND (latency sensitive)
+    - DSQ_MEDIUM: MIXED (balanced) or high-priority CPU_BOUND (priority >= 8)
+    - DSQ_LOW: CPU_BOUND batch contention workloads (priority < 8)
     """
-    if wait_time > starvation_limit:
-        return "HIGH"  # Starvation escape hatch
-
-    if workload_class in ["ML_TRAINING", "IO_BOUND"] and priority >= 5:
-        return "HIGH"
-    elif workload_class == "CPU_BOUND" and priority < 4:
-        return "LOW"
-    else:
-        return "MEDIUM"
+    if workload_class in ["ML_TRAINING", "IO_BOUND"]:
+        return "HIGH" if priority >= 3 else "MEDIUM"
+    elif workload_class == "CPU_BOUND":
+        return "MEDIUM" if priority >= 8 else "LOW"
+    else:  # MIXED
+        return "HIGH" if priority >= 8 else "MEDIUM"
 
 # ============================================================
 # MAIN SCHEDULER IMPLEMENTATION
@@ -145,6 +144,11 @@ def ml_guided_scheduler(
     processes["prediction_confidence"] = confidences
     processes["target_quantum"] = quantums
 
+    processes["assigned_dsq"] = processes.apply(
+        lambda r: assign_dsq(r["predicted_workload"], r["priority"]),
+        axis=1
+    )
+
     processes = processes.sort_values(["arrival_time", "process_id"]).reset_index(drop=True)
 
     if not preemptive:
@@ -176,14 +180,15 @@ def ml_guided_scheduler(
                 return base_w + burst_bonus + priority_comp + aging_comp
 
             ready["dynamic_score"] = ready.apply(compute_score, axis=1)
-            ready["assigned_dsq"] = ready.apply(
-                lambda r: assign_dsq(r["predicted_workload"], r["priority"], r["prediction_confidence"], r["current_waiting"], starvation_limit),
-                axis=1
-            )
 
-            # Sort by DSQ (HIGH -> MEDIUM -> LOW), then dynamic score
+            # Sort by DSQ (HIGH -> MEDIUM -> LOW), with aging escalation for starving tasks
             dsq_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
-            ready["dsq_rank"] = ready["assigned_dsq"].map(dsq_order)
+            def get_effective_dsq_rank(r):
+                if r["current_waiting"] > starvation_limit:
+                    return 0  # Promoted to front due to starvation
+                return dsq_order[r["assigned_dsq"]]
+
+            ready["dsq_rank"] = ready.apply(get_effective_dsq_rank, axis=1)
             selected = ready.sort_values(by=["dsq_rank", "dynamic_score"], ascending=[True, False]).iloc[0]
 
             pid = int(selected["process_id"])
@@ -208,7 +213,6 @@ def ml_guided_scheduler(
         remaining_burst = {int(r["process_id"]): int(r["cpu_burst"]) for _, r in processes.iterrows()}
         first_start = {}
         completion_times = {}
-        assigned_dsqs = {}
         final_scores = {}
 
         ready_queue = [] # list of pids
@@ -231,12 +235,13 @@ def ml_guided_scheduler(
             def get_task_sort_key(pid):
                 info = p_dict[pid]
                 wait = current_time - info["arrival_time"]
-                dsq = assign_dsq(info["predicted_workload"], info["priority"], info["prediction_confidence"], wait, starvation_limit)
-                assigned_dsqs[pid] = dsq
-                dsq_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}[dsq]
+                base_dsq = info["assigned_dsq"]
+                dsq_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}[base_dsq]
                 score = (info["priority"] * 0.3) + (aging_weight * (wait / 500.0))
                 final_scores[pid] = score
-                return (dsq_rank, -score)
+                # Effective rank: starving tasks promoted to front
+                effective_rank = 0 if wait > starvation_limit else dsq_rank
+                return (effective_rank, -score)
 
             ready_queue.sort(key=get_task_sort_key)
             pid = ready_queue.pop(0)
@@ -267,7 +272,7 @@ def ml_guided_scheduler(
             ct = completion_times[pid]
             rows.append({
                 **p.to_dict(),
-                "assigned_dsq": assigned_dsqs.get(pid, "MEDIUM"),
+                "assigned_dsq": p["assigned_dsq"],
                 "dynamic_score": final_scores.get(pid, 0.5),
                 "start_time": st,
                 "completion_time": ct,
