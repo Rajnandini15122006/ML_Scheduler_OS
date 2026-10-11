@@ -81,7 +81,7 @@ void BPF_STRUCT_OPS(mltrain_enqueue, struct task_struct *p, u64 enq_flags)
                     slice_us = 15000; /* 15 ms compute quantum */
                     break;
                 case CLASS_CPU_BOUND:
-                    dsq_id = (ts->ml_priority >= 70) ? DSQ_HIGH : DSQ_MEDIUM;
+                    dsq_id = (ts->ml_priority >= 80) ? DSQ_MEDIUM : DSQ_LOW;
                     slice_us = 20000; /* 20 ms throughput quantum */
                     break;
                 case CLASS_IO_BOUND:
