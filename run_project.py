@@ -52,8 +52,12 @@ def main():
     print_banner("STEP 5: Running Ablation Studies (A0, A1, A2, A5 vs Full Policy)")
     subprocess.run([sys.executable, "src/ablation_study.py"], check=True)
 
-    # 6. Launch Streamlit Dashboard
-    print_banner("STEP 6: Launching Interactive Streamlit Dashboard")
+    # 6. Verify Linux Kernel Integration
+    print_banner("STEP 6: Verifying Linux sched_ext BPF Kernel Integration Path")
+    subprocess.run([sys.executable, "scheduler/verify_kernel_path.py"], check=True)
+
+    # 7. Launch Streamlit Dashboard
+    print_banner("STEP 7: Launching Interactive Streamlit Dashboard")
     print("Opening Dashboard at: http://localhost:8501")
     print("Press Ctrl+C in this terminal to stop the dashboard when done.")
     print("=" * 70 + "\n")
