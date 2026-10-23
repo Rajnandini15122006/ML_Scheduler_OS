@@ -7,12 +7,18 @@ Academic / Systems Evaluation Platform for ML-Guided CPU Scheduling
 import streamlit as st
 import pandas as pd
 import numpy as np
+
+# NumPy 2.0 backward compatibility shim
+if not hasattr(np, "unicode_"):
+    np.unicode_ = np.str_
+if not hasattr(np, "bytes_"):
+    np.bytes_ = bytes
+
 import os
 import sys
 import time
 import psutil
 import plotly.graph_objects as go
-import plotly.express as px
 
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -654,14 +660,15 @@ with tab_ml:
             importances = model.feature_importances_
             feat_df = pd.DataFrame({"Feature": FEATURES, "Importance": importances}).sort_values("Importance", ascending=True)
             
-            fig_feat = px.bar(
-                feat_df,
-                x="Importance",
-                y="Feature",
+            fig_feat = go.Figure(go.Bar(
+                x=feat_df["Importance"],
+                y=feat_df["Feature"],
                 orientation="h",
-                color="Importance",
-                color_continuous_scale="Teal"
-            )
+                marker=dict(
+                    color=feat_df["Importance"],
+                    colorscale="Teal"
+                )
+            ))
             fig_feat.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), showlegend=False)
             st.plotly_chart(fig_feat, use_container_width=True)
             st.caption("Gini feature importances across 100 trees. CPU and I/O bursts provide primary discriminative power.")
@@ -669,12 +676,12 @@ with tab_ml:
         with col_m2:
             st.markdown("##### Benchmark Workload Distribution")
             class_counts = df_workload["workload_type"].value_counts()
-            fig_dist = px.pie(
-                names=class_counts.index,
+            fig_dist = go.Figure(go.Pie(
+                labels=class_counts.index,
                 values=class_counts.values,
                 hole=0.6,
-                color_discrete_sequence=["#1D4ED8", "#10B981", "#F59E0B", "#EF4444"]
-            )
+                marker=dict(colors=["#1D4ED8", "#10B981", "#F59E0B", "#EF4444"])
+            ))
             fig_dist.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig_dist, use_container_width=True)
             st.caption("Balanced distribution across evaluated benchmark tasks.")
