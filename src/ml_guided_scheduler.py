@@ -28,7 +28,9 @@ FEATURES = [
     "io_burst",
     "priority",
     "previous_runtime",
-    "context_switches"
+    "context_switches",
+    "mem_rss_mb",
+    "num_threads"
 ]
 TARGET = "workload_type"
 
@@ -119,6 +121,12 @@ def ml_guided_scheduler(
     Supports preemptive adaptive quantum scheduling or non-preemptive dynamic queue dispatch.
     """
     processes = data.copy()
+
+    # Graceful defaults for optional features if missing
+    if "mem_rss_mb" not in processes.columns:
+        processes["mem_rss_mb"] = 512
+    if "num_threads" not in processes.columns:
+        processes["num_threads"] = 2
 
     # Train model on reference or input data
     model, encoder = train_workload_classifier(processes)

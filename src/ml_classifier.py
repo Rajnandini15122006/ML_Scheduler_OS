@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 
@@ -19,40 +20,35 @@ FEATURES = [
     "io_burst",
     "priority",
     "previous_runtime",
-    "context_switches"
+    "context_switches",
+    "mem_rss_mb",
+    "num_threads"
 ]
 
 TARGET = "workload_type"
 
 
 def load_data():
-
     df = pd.read_csv(DATA_FILE)
-
     X = df[FEATURES]
     y = df[TARGET]
-
     return df, X, y
 
 
 def train_model(X_train, y_train):
-
     model = RandomForestClassifier(
         n_estimators=100,
         random_state=42,
         class_weight="balanced",
         n_jobs=-1
     )
-
     model.fit(X_train, y_train)
-
     return model
 
 
 def main():
-
     print("=" * 60)
-    print("ML WORKLOAD CLASSIFIER")
+    print("ML WORKLOAD CLASSIFIER (ENHANCED OS TELEMETRY)")
     print("=" * 60)
 
     df, X, y = load_data()
@@ -60,7 +56,7 @@ def main():
     print("\nDataset shape:")
     print(df.shape)
 
-    print("\nFeatures:")
+    print("\nFeatures used for classification:")
     print(FEATURES)
 
     print("\nTarget distribution:")
@@ -83,29 +79,14 @@ def main():
 
     model = train_model(X_train, y_train)
 
-    print("\nRandom Forest training completed.")
+    print("\nModel training completed.")
 
     predictions = model.predict(X_test)
 
     accuracy = accuracy_score(y_test, predictions)
-    precision = precision_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
-    recall = recall_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
-    f1 = f1_score(
-        y_test,
-        predictions,
-        average="weighted",
-        zero_division=0
-    )
+    precision = precision_score(y_test, predictions, average="weighted", zero_division=0)
+    recall = recall_score(y_test, predictions, average="weighted", zero_division=0)
+    f1 = f1_score(y_test, predictions, average="weighted", zero_division=0)
 
     print("\n" + "=" * 60)
     print("MODEL EVALUATION")
@@ -120,13 +101,7 @@ def main():
     print("CLASSIFICATION REPORT")
     print("=" * 60)
 
-    print(
-        classification_report(
-            y_test,
-            predictions,
-            zero_division=0
-        )
-    )
+    print(classification_report(y_test, predictions, zero_division=0))
 
     print("\n" + "=" * 60)
     print("CONFUSION MATRIX")
@@ -141,10 +116,7 @@ def main():
     importance = pd.DataFrame({
         "feature": FEATURES,
         "importance": model.feature_importances_
-    }).sort_values(
-        "importance",
-        ascending=False
-    )
+    }).sort_values("importance", ascending=False)
 
     print(importance.to_string(index=False))
 

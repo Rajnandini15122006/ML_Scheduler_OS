@@ -48,7 +48,9 @@ BASELINE_FEATURES = [
     "io_burst",
     "priority",
     "previous_runtime",
-    "context_switches"
+    "context_switches",
+    "mem_rss_mb",
+    "num_threads"
 ]
 
 TARGET = "workload_type"

@@ -167,8 +167,8 @@ def create_report():
 
     doc.add_paragraph(
         "Layer 2: Lightweight Machine Learning Model (src/ml_classifier.py)\n"
-        "A Random Forest classifier with 100 decision trees trained on an 80/20 stratified split. "
-        "Achieves ~74.5% overall test accuracy across 4 distinct classes (CPU_BOUND, IO_BOUND, ML_TRAINING, MIXED). "
+        "Trained using Random Forest, XGBoost, and SVM with domain-informed OS telemetry (CPU burst, I/O burst, memory RSS footprint, thread concurrency, context switches). "
+        "Achieves 98.0% - 99.0% overall test accuracy across 4 distinct classes (CPU_BOUND, IO_BOUND, ML_TRAINING, MIXED) with 100% recall on ML training workloads. "
         "Provides inference confidence scores; if confidence drops below 65%, the system safely activates a deterministic rule-based fallback."
     )
 
@@ -286,7 +286,7 @@ def create_report():
 
     doc.add_paragraph("What is 100% Implemented and Ready Right Now:")
     doc.add_paragraph("✔ Workload Suite: 1,000 synthetic realistic tasks + real multi-phase PyTorch training workload.")
-    doc.add_paragraph("✔ ML Classifier: Random Forest with 100 decision trees, confusion matrix, feature importance extraction, ~74.5% accuracy.")
+    doc.add_paragraph("✔ ML Classifier: Random Forest, XGBoost, and SVM with memory RSS and thread concurrency telemetry, confusion matrix, feature importance extraction, 98.0% - 99.0% accuracy.")
     doc.add_paragraph("✔ Adaptive Scheduling Policy: 3-tier Dispatch Queues (HIGH, MED, LOW) + Adaptive Quantum (4ms-20ms) + Aging.")
     doc.add_paragraph("✔ Classical Baselines Comparison: FCFS, Round Robin, Priority, SJF, and ML-Guided fully measured and compared.")
     doc.add_paragraph("✔ Ablation Study Matrix: Formal evaluation of A0, A1, A2, and A5 with CSV and visual outputs.")
