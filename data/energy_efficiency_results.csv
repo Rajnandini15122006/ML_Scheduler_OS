@@ -1,0 +1,3 @@
+Policy,Training_Time_Sec,Context_Switches,CPU_Energy_kJ,GPU_Energy_kJ,Cache_Penalty_kJ,Total_Energy_kJ,Total_Energy_kWh,Carbon_Footprint_gCO2
+Default Linux CFS,850.0,25400,93.24,194.67,0.0038,287.91,0.08,30.79
+MLTrain-Sched (Green AI Engine),695.0,9800,71.07,194.04,0.0015,265.12,0.0736,28.35

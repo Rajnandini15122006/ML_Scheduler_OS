@@ -258,15 +258,17 @@ with st.sidebar:
         p.start()
         st.success(f"Dispatched ML compute worker [PID: {p.pid}] to CPU queue")
 
-# 7 System Tabs
-tab_hw, tab_flow, tab_bench, tab_play, tab_queues, tab_ml, tab_abl = st.tabs([
+# 9 System Tabs
+tab_hw, tab_flow, tab_bench, tab_play, tab_queues, tab_ml, tab_abl, tab_live, tab_green = st.tabs([
     "Hardware & Live Telemetry",
     "Scheduling Architecture & Flow",
     "Comparative Benchmark Matrix",
     "Interactive Policy Playground",
     "Dispatch Queue (DSQ) Lanes & Trace",
     "ML Explainability & Boundaries",
-    "System Ablation Studies"
+    "System Ablation Studies",
+    "Live OS Process & GPU Co-Scheduler",
+    "Green Computing & Energy Profiler"
 ])
 
 # ==============================================================================
@@ -747,3 +749,88 @@ with tab_abl:
         """)
     else:
         st.info("Ablation dataset not found. Execute src/ablation_study.py.")
+
+# ==============================================================================
+# TAB 8: LIVE OS PROCESS CONTROLLER & GPU CO-SCHEDULER
+# ==============================================================================
+with tab_live:
+    st.subheader("Live OS Process Controller & GPU Co-Scheduling Engine")
+    st.write("Real-time host process prioritization and GPU accelerator starvation avoidance:")
+
+    col_l1, col_l2 = st.columns([1, 1])
+
+    with col_l1:
+        st.markdown("##### Real Host OS Process Management")
+        st.caption("Inspects real running processes, infers workload classes with ML, and physically updates OS thread priorities.")
+
+        dry_run_mode = st.checkbox("Dry Run Mode (Simulate without modifying OS priorities)", value=False)
+        if st.button("Scan & Optimize Active Host Processes"):
+            try:
+                from live_process_controller import LiveProcessController
+                ctrl = LiveProcessController(dry_run=dry_run_mode)
+                procs = ctrl.scan_active_processes(limit=15)
+                actions = ctrl.classify_and_optimize(procs)
+                if actions:
+                    df_actions = pd.DataFrame(actions)
+                    disp_cols = ["pid", "name", "cpu_pct", "mem_rss_mb", "threads", "predicted_workload", "assigned_dsq", "os_priority_set", "status"]
+                    st.dataframe(df_actions[disp_cols], use_container_width=True)
+                    st.success(f"Successfully processed {len(actions)} host processes!")
+                else:
+                    st.info("No active user processes eligible for reprioritization.")
+            except Exception as e:
+                st.error(f"Live controller error: {e}")
+
+    with col_l2:
+        st.markdown("##### GPU-Aware CPU Co-Scheduling")
+        st.caption("Monitors GPU compute saturation and issues Emergency Boosts to prevent GPU idle stalls.")
+
+        gpu_res_file = os.path.join("data", "gpu_co_scheduling_results.csv")
+        if os.path.exists(gpu_res_file):
+            df_gpu = pd.read_csv(gpu_res_file)
+            cfs_avg_gpu = df_gpu["cfs_gpu_util"].mean()
+            ml_avg_gpu = df_gpu["ml_gpu_util"].mean()
+            boost_count = int(df_gpu["ml_emergency_boost"].sum())
+            
+            gm1, gm2, gm3 = st.columns(3)
+            gm1.metric("Default CFS GPU Util", f"{cfs_avg_gpu:.1f}%")
+            gm2.metric("MLTrain-Sched GPU Util", f"{ml_avg_gpu:.1f}%", delta=f"+{ml_avg_gpu - cfs_avg_gpu:.1f}%")
+            gm3.metric("Emergency Boosts Issued", f"{boost_count} events")
+
+            st.markdown("---")
+            gpu_img = os.path.join("results", "gpu_co_scheduling_analysis.png")
+            if os.path.exists(gpu_img):
+                st.image(gpu_img, caption="GPU Accelerator Utilization & Emergency Boost Trace", use_container_width=True)
+        else:
+            st.info("GPU co-scheduling data not found. Execute src/gpu_co_scheduler.py.")
+
+# ==============================================================================
+# TAB 9: GREEN COMPUTING & ENERGY PROFILER
+# ==============================================================================
+with tab_green:
+    st.subheader("Green Computing & Energy Sustainability Profiler")
+    st.write("Dynamic CMOS power modeling and carbon footprint reduction via context-switch cache preservation:")
+
+    energy_file = os.path.join("data", "energy_efficiency_results.csv")
+    if os.path.exists(energy_file):
+        df_energy = pd.read_csv(energy_file)
+
+        e1, e2, e3 = st.columns(3)
+        cfs_kj = df_energy.loc[0, "Total_Energy_kJ"]
+        ml_kj = df_energy.loc[1, "Total_Energy_kJ"]
+        pct_saved = ((cfs_kj - ml_kj) / cfs_kj) * 100
+        switches_saved = df_energy.loc[0, "Context_Switches"] - df_energy.loc[1, "Context_Switches"]
+        co2_saved = df_energy.loc[0, "Carbon_Footprint_gCO2"] - df_energy.loc[1, "Carbon_Footprint_gCO2"]
+
+        e1.metric("Total Energy Saved", f"-{pct_saved:.2f}%", f"{cfs_kj - ml_kj:.1f} kJ saved")
+        e2.metric("Cache Switches Eliminated", f"-{switches_saved:,}", "Fewer cache refills")
+        e3.metric("Carbon Emissions Avoided", f"{co2_saved:.2f} g CO2", "EPA Grid Equivalent")
+
+        st.markdown("---")
+        st.markdown("##### Energy Consumption & Carbon Audit Breakdown")
+        st.dataframe(df_energy, use_container_width=True)
+
+        energy_img = os.path.join("results", "energy_efficiency_comparison.png")
+        if os.path.exists(energy_img):
+            st.image(energy_img, caption="Energy Consumption, Cache Miss Invalidation, and Carbon Metrics", use_container_width=True)
+    else:
+        st.info("Energy profiling data not found. Execute src/energy_profiler.py.")
